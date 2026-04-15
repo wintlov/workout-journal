@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ТРЕН — Умный дневник тренировок</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;
+  --border:#222222;--border2:#2a2a2a;
+  --text:#f0f0f0;--text2:#888888;--text3:#444444;
+  --accent:#e8ff47;--accent2:#c8df27;
+  --red:#ff4444;--green:#44ff88;--orange:#ff9944;
+  --fd:'Unbounded',sans-serif;--fm:'JetBrains Mono',monospace;
+  --r:4px;--t:0.15s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--fm);}
+#app{min-height:100vh;display:flex;flex-direction:column;}
+.screen{display:none;flex-direction:column;min-height:100vh;animation:fi .25s ease;}
+.screen.active{display:flex;}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hidden{display:none!important;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100;}
+.logo{font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:.15em;color:var(--accent);}
+.nav-btn{background:none;border:1px solid var(--border2);color:var(--text2);font-family:var(--fm);font-size:11px;padding:6px 12px;cursor:pointer;border-radius:var(--r);transition:var(--t);letter-spacing:.05em;}
+.nav-btn:hover,.nav-btn.active{border-color:var(--accent);color:var(--accent);}
+.topbar-actions{display:flex;gap:8px;}
+
+/* BUTTONS */
+.btn{font-family:var(--fm);font-size:13px;padding:14px 24px;border-radius:var(--r);cursor:pointer;border:none;transition:var(--t);letter-spacing:.05em;font-weight:500;}
+.btn-primary{background:var(--accent);color:#0a0a0a;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-primary:disabled{background:var(--border2);color:var(--text3);cursor:not-allowed;}
+.btn-ghost{background:none;border:1px solid var(--border2);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--text2);color:var(--text);}
+.btn-danger{background:none;border:1px solid var(--red);color:var(--red);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-lg{padding:18px 32px;font-size:14px;}
+
+/* ONBOARDING */
+#screen-onboarding{align-items:center;justify-content:center;padding:40px 24px;}
+.onboard-wrap{width:100%;max-width:480px;}
+.onboard-label{font-size:11px;letter-spacing:.15em;color:var(--text2);margin-bottom:8px;}
+.onboard-title{font-family:var(--fd);font-size:30px;font-weight:700;line-height:1.2;margin-bottom:40px;}
+.onboard-title span{color:var(--accent);}
+.step{display:none;}
+.step.active{display:block;animation:fi .2s ease;}
+.step-indicator{display:flex;gap:5px;margin-bottom:28px;}
+.step-dot{width:20px;height:3px;background:var(--border2);border-radius:2px;transition:var(--t);}
+.step-dot.done{background:var(--accent);}
+.step-q{font-size:17px;font-weight:500;margin-bottom:5px;}
+.step-hint{font-size:12px;color:var(--text2);margin-bottom:20px;}
+.option-grid{display:grid;gap:9px;}
+.option-grid.cols2{grid-template-columns:1fr 1fr;}
+.option-card{padding:14px 16px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;transition:var(--t);background:var(--bg2);}
+.option-card:hover{border-color:var(--text3);}
+.option-card.selected{border-color:var(--accent);background:rgba(232,255,71,.05);}
+.opt-label{font-size:13px;font-weight:500;}
+.opt-desc{font-size:11px;color:var(--text2);margin-top:3px;}
+.opt-max{font-size:10px;color:var(--orange);margin-top:2px;letter-spacing:.05em;}
+.step-nav{display:flex;gap:12px;margin-top:28px;}
+
+/* NUMBER INPUT */
+.num-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;}
+.num-field{display:flex;flex-direction:column;gap:6px;}
+.num-label{font-size:11px;color:var(--text2);letter-spacing:.05em;}
+.num-input{background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--fm);font-size:20px;padding:16px;border-radius:var(--r);width:100%;outline:none;transition:var(--t);}
+.num-input:focus{border-color:var(--accent);}
+.num-input::placeholder{color:var(--text3);}
+.bmi-hint{font-size:11px;color:var(--text2);margin-top:8px;min-height:16px;}
+
+/* TABS */
+.tab-content{padding:24px;max-width:600px;margin:0 auto;width:100%;flex:1;}
+.page-title{font-family:var(--fd);font-size:22px;font-weight:600;margin-bottom:24px;}
+
+/* HOME */
+.today-header{margin-bottom:24px;}
+.today-date{font-size:11px;color:var(--text2);letter-spacing:.1em;margin-bottom:4px;}
+.today-title{font-family:var(--fd);font-size:20px;font-weight:600;}
+
+/* MODE BADGE */
+.mode-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:20px;margin-bottom:16px;letter-spacing:.06em;}
+.mode-badge.normal{border:1px solid var(--border2);color:var(--text2);}
+.mode-badge.max{border:1px solid var(--orange);color:var(--orange);background:rgba(255,153,68,.07);}
+
+.plan-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px;}
+.plan-card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.plan-card-title{font-size:11px;letter-spacing:.1em;color:var(--text2);}
+.plan-card-meta{font-size:11px;color:var(--text3);}
+.exercise-item{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);transition:var(--t);cursor:pointer;}
+.exercise-item:last-child{border-bottom:none;}
+.exercise-item:hover{background:rgba(255,255,255,.02);}
+.exercise-item.done{opacity:.4;}
+.ex-check{width:20px;height:20px;border:1px solid var(--border2);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:var(--t);}
+.exercise-item.done .ex-check{background:var(--accent);border-color:var(--accent);}
+.check-mark{font-size:11px;color:#0a0a0a;display:none;}
+.exercise-item.done .check-mark{display:block;}
+.ex-info{flex:1;}
+.ex-name{font-size:14px;font-weight:500;}
+.ex-sets{font-size:11px;color:var(--text2);margin-top:3px;}
+.ex-tip{font-size:10px;color:var(--text3);margin-top:2px;font-style:italic;}
+.ex-timer-btn{background:none;border:1px solid var(--border2);color:var(--text2);font-family:var(--fm);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:var(--r);transition:var(--t);white-space:nowrap;}
+.ex-timer-btn:hover{border-color:var(--accent);color:var(--accent);}
+.workout-actions{display:flex;gap:12px;margin-top:16px;}
+.rest-day{padding:60px 0;text-align:center;color:var(--text2);font-size:13px;line-height:2.2;}
+
+/* TIMER */
+.timer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fi .2s ease;}
+.timer-label{font-size:11px;letter-spacing:.15em;color:var(--text2);margin-bottom:14px;}
+.timer-display{font-family:var(--fd);font-size:72px;font-weight:300;color:var(--accent);line-height:1;margin-bottom:12px;}
+.timer-bar-wrap{width:220px;height:3px;background:var(--border2);border-radius:2px;margin-bottom:36px;}
+.timer-bar{height:3px;background:var(--accent);border-radius:2px;transition:width .9s linear;}
+.timer-btns{display:flex;gap:16px;}
+
+/* PROGRESS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.stat-val{font-family:var(--fd);font-size:26px;font-weight:700;color:var(--accent);}
+.stat-label{font-size:10px;color:var(--text2);margin-top:3px;letter-spacing:.05em;}
+.section-label{font-size:11px;letter-spacing:.1em;color:var(--text2);margin-bottom:10px;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:24px;}
+.cal-day{aspect-ratio:1;border-radius:2px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;}
+.cal-day.trained{background:var(--accent);border-color:var(--accent);}
+.cal-day.today{border-color:var(--text2);}
+.history-list{display:flex;flex-direction:column;gap:9px;}
+.history-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;}
+.hist-date{font-size:11px;color:var(--text2);}
+.hist-name{font-size:13px;font-weight:500;margin-top:2px;}
+.hist-badge{font-size:10px;color:var(--accent);}
+.hist-stats{font-size:11px;color:var(--text2);text-align:right;}
+
+/* EXERCISES DB */
+.filter-bar{display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;}
+.filter-chip{padding:5px 13px;border:1px solid var(--border2);border-radius:20px;font-family:var(--fm);font-size:11px;cursor:pointer;transition:var(--t);color:var(--text2);background:none;}
+.filter-chip:hover{border-color:var(--text2);color:var(--text);}
+.filter-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(232,255,71,.05);}
+.ex-db-list{display:flex;flex-direction:column;gap:9px;}
+.ex-db-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.ex-db-header{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.ex-db-header:hover{background:rgba(255,255,255,.02);}
+.ex-db-name{font-size:13px;font-weight:500;}
+.ex-db-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;}
+.tag{font-size:9px;padding:2px 6px;border-radius:2px;letter-spacing:.04em;background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+.tag.chest{border-color:#ff6b6b33;color:#ff6b6b;}.tag.legs{border-color:#6bffb833;color:#6bffb8;}
+.tag.back{border-color:#6b8fff33;color:#6b8fff;}.tag.abs{border-color:#ffb86b33;color:#ffb86b;}
+.tag.cardio{border-color:#ff6bff33;color:#ff6bff;}.tag.shoulders{border-color:#b86bff33;color:#b86bff;}
+.tag.intermediate{color:var(--accent);border-color:rgba(232,255,71,.2);}
+.tag.advanced{color:var(--red);border-color:rgba(255,68,68,.2);}
+.ex-expand{font-size:11px;color:var(--text3);transition:var(--t);}
+.ex-db-item.open .ex-expand{transform:rotate(180deg);}
+.ex-db-body{display:none;padding:14px 18px;border-top:1px solid var(--border);}
+.ex-db-item.open .ex-db-body{display:block;}
+.ex-db-desc{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px;}
+.ex-db-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);text-decoration:none;border:1px solid rgba(232,255,71,.3);padding:5px 11px;border-radius:var(--r);transition:var(--t);}
+.ex-db-link:hover{background:rgba(232,255,71,.08);}
+
+/* SETTINGS */
+.settings-section{margin-bottom:28px;}
+.settings-section-label{font-size:10px;letter-spacing:.15em;color:var(--text2);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:7px;}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);}
+.setting-row:last-child{border-bottom:none;}
+.setting-name{font-size:13px;}
+.setting-val{font-size:12px;color:var(--accent);cursor:pointer;}
+.setting-val:hover{text-decoration:underline;}
+
+/* COMPLETE */
+.complete-overlay{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;animation:fi .3s ease;}
+.complete-icon{font-size:48px;margin-bottom:22px;}
+.complete-title{font-family:var(--fd);font-size:30px;font-weight:700;color:var(--accent);margin-bottom:6px;}
+.complete-sub{font-size:12px;color:var(--text2);margin-bottom:36px;}
+.complete-stats{display:flex;gap:40px;margin-bottom:36px;}
+.complete-stat{text-align:center;}
+.complete-stat-val{font-family:var(--fd);font-size:34px;font-weight:700;}
+.complete-stat-label{font-size:10px;color:var(--text2);letter-spacing:.1em;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:26px;width:100%;max-width:380px;animation:fi .2s ease;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:18px;}
+.modal-options{display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.modal-opt{padding:11px 15px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;font-family:var(--fm);font-size:13px;transition:var(--t);background:none;color:var(--text);text-align:left;}
+.modal-opt:hover{border-color:var(--text2);}
+.modal-opt.selected{border-color:var(--accent);color:var(--accent);}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══════════════════ ONBOARDING ═══════════════════ -->
+<div id="screen-onboarding" class="screen active">
+<div class="onboard-wrap">
+  <div class="onboard-label">ТРЕН / НАСТРОЙКА</div>
+  <div class="onboard-title">Настроим<br><span>твой план</span></div>
+  <div class="step-indicator" id="stepIndicator"></div>
+
+  <!-- STEP 1: GOAL -->
+  <div class="step active" id="step-1">
+    <div class="step-q">Твоя цель?</div>
+    <div class="step-hint">Определяет тип упражнений и структуру тренировок</div>
+    <div class="option-grid">
+      <div class="option-card" data-val="weight_loss"><div class="opt-label">Похудение</div><div class="opt-desc">Кардио + функциональные упражнения</div></div>
+      <div class="option-card" data-val="muscle_gain"><div class="opt-label">Набор массы</div><div class="opt-desc">Силовые с прогрессией нагрузки</div></div>
+      <div class="option-card" data-val="endurance"><div class="opt-label">Выносливость</div><div class="opt-desc">Высокие повторения, меньший отдых</div></div>
+      <div class="option-card" data-val="general"><div class="opt-label">Универсально</div><div class="opt-desc">Баланс силы, выносливости и гибкости</div></div>
+      <div class="option-card" data-val="maximum" style="border-color:rgba(255,153,68,.4);background:rgba(255,153,68,.05);">
+        <div class="opt-label">🔥 Максимум</div>
+        <div class="opt-desc">Изнурительные тренировки для быстрого результата</div>
+        <div class="opt-max">ВЫСОКАЯ НАГРУЗКА · ТОЛЬКО ДЛЯ ГОТОВЫХ</div>
+      </div>
+    </div>
+    <div class="step-nav"><button class="btn btn-primary" id="next1" disabled>Далее →</button></div>
+  </div>
+
+  <!-- STEP 2: LEVEL -->
+  <div class="step" id="step-2">
+    <div class="step-q">Твой уровень?</div>
+    <div class="step-hint">Влияет на сложность упражнений и объём</div>
+    <div class="option-grid">
+      <div class="option-card" data-val="beginner"><div class="opt-label">Новичок</div><div class="opt-desc">До 3 месяцев тренировок</div></div>
+      <div class="option-card" data-val="intermediate"><div class="opt-label">Средний</div><div class="opt-desc">3–12 месяцев регулярно</div></div>
+      <div class="option-card" data-val="advanced"><div class="opt-label">Продвинутый</div><div class="opt-desc">Больше года стабильно</div></div>
+    </div>
+    <div class="step-nav"><button class="btn btn-ghost" onclick="goStep(1)">← Назад</button><button class="btn btn-primary" id="next2" disabled>Далее →</button></div>
+  </div>
+
+  <!-- STEP 3: BODY -->
+  <div class="step" id="step-3">
+    <div class="step-q">Твои данные тела?</div>
+    <div class="step-hint">Поможет рассчитать нагрузку и ИМТ</div>
+    <div class="num-inputs">
+      <div class="num-field"><div class="num-label">ВЕС (КГ)</div><input class="num-input" id="inp-weight" type="number" min="30" max="250" placeholder="70" oninput="updateBMI()"></div>
+      <div class="num-field"><div class="num-label">РОСТ (СМ)</div><input class="num-input" id="inp-height" type="number" min="100" max="250" placeholder="175" oninput="updateBMI()"></div>
+    </div>
+    <div class="bmi-hint" id="bmiHint"></div>
+    <div class="step-nav"><button class="btn btn-ghost" onclick="goStep(2)">← Назад</button><button class="btn btn-primary" id="next3" disabled>Далее →</button></div>
+  </div>
+
+  <!-- STEP 4: EQUIPMENT -->
+  <div class="step" id="step-4">
+    <div class="step-q">Доступный инвентарь?</div>
+    <div class="step-hint">Можно выбрать несколько</div>
+    <div class="option-grid cols2">
+      <div class="option-card multi" data-val="none"><div class="opt-label">Ничего</div><div class="opt-desc">Только вес тела</div></div>
+      <div class="option-card multi" data-val="dumbbells"><div class="opt-label">Гантели</div></div>
+      <div class="option-card multi" data-val="bands"><div class="opt-label">Резинки</div></div>
+      <div class="option-card multi" data-val="pullup_bar"><div class="opt-label">Турник</div></div>
+    </div>
+    <div class="step-nav"><button class="btn btn-ghost" onclick="goStep(3)">← Назад</button><button class="btn btn-primary" id="next4" disabled>Далее →</button></div>
+  </div>
+
+  <!-- STEP 5: DURATION -->
+  <div class="step" id="step-5">
+    <div class="step-q">Время тренировки?</div>
+    <div class="step-hint">Сколько минут за раз ты готов уделять</div>
+    <div class="option-grid cols2">
+      <div class="option-card" data-val="10"><div class="opt-label">10 мин</div><div class="opt-desc">Экспресс</div></div>
+      <div class="option-card" data-val="20"><div class="opt-label">20 мин</div><div class="opt-desc">Быстро</div></div>
+      <div class="option-card" data-val="30"><div class="opt-label">30 мин</div><div class="opt-desc">Стандарт</div></div>
+      <div class="option-card" data-val="45"><div class="opt-label">45+ мин</div><div class="opt-desc">Полная</div></div>
+    </div>
+    <div class="step-nav"><button class="btn btn-ghost" onclick="goStep(4)">← Назад</button><button class="btn btn-primary" id="next5" disabled>Далее →</button></div>
+  </div>
+
+  <!-- STEP 6: FREQUENCY -->
+  <div class="step" id="step-6">
+    <div class="step-q">Сколько дней в неделю?</div>
+    <div class="step-hint">Нагрузка распределится равномерно</div>
+    <div class="option-grid cols2">
+      <div class="option-card" data-val="2"><div class="opt-label">2 дня</div></div>
+      <div class="option-card" data-val="3"><div class="opt-label">3 дня</div></div>
+      <div class="option-card" data-val="4"><div class="opt-label">4 дня</div></div>
+      <div class="option-card" data-val="5"><div class="opt-label">5 дней</div></div>
+    </div>
+    <div class="step-nav"><button class="btn btn-ghost" onclick="goStep(5)">← Назад</button><button class="btn btn-primary btn-lg" id="finishOnboard" disabled>Создать план</button></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
+<div id="screen-main" class="screen">
+  <div class="topbar">
+    <div class="logo">ТРЕН</div>
+    <div class="topbar-actions">
+      <button class="nav-btn active" onclick="showTab('home')" id="tab-home">Сегодня</button>
+      <button class="nav-btn" onclick="showTab('progress')" id="tab-progress">Прогресс</button>
+      <button class="nav-btn" onclick="showTab('exercises')" id="tab-exercises">База</button>
+      <button class="nav-btn" onclick="showTab('settings')" id="tab-settings">⚙</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="tab-content-home" class="tab-content" style="display:flex;flex-direction:column;">
+    <div class="today-header">
+      <div class="today-date" id="todayDate"></div>
+      <div class="today-title" id="todayTitle">Тренировка</div>
+    </div>
+    <div id="modeBadge" class="mode-badge normal"></div>
+    <div class="plan-card" id="workoutCard">
+      <div id="workoutContent">
+        <div class="plan-card-header">
+          <span class="plan-card-title" id="workoutName">ТРЕНИРОВКА</span>
+          <span class="plan-card-meta" id="workoutMeta"></span>
+        </div>
+        <div class="exercise-list" id="exerciseList"></div>
+      </div>
+    </div>
+    <div class="workout-actions hidden" id="workoutActions">
+      <button class="btn btn-primary btn-lg" style="flex:1" onclick="completeWorkout()">Завершить тренировку</button>
+      <button class="btn btn-ghost" onclick="newWorkout()" title="Другой план">↻</button>
+    </div>
+    <div id="restDayMsg" class="rest-day hidden">Сегодня день отдыха.<br>Восстановление — тоже тренировка.</div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="tab-content-progress" class="tab-content hidden">
+    <div class="page-title">Прогресс</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="statTotal">0</div><div class="stat-label">ТРЕНИРОВОК</div></div>
+      <div class="stat-card"><div class="stat-val" id="statStreak">0</div><div class="stat-label">ПОДРЯД</div></div>
+      <div class="stat-card"><div class="stat-val" id="statReps">0</div><div class="stat-label">ПОВТОРЕНИЙ</div></div>
+    </div>
+    <div class="section-label">ПОСЛЕДНИЕ 28 ДНЕЙ</div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+    <div class="section-label">ИСТОРИЯ</div>
+    <div class="history-list" id="historyList"><div style="color:var(--text3);font-size:12px;padding:20px 0;">История появится после первой тренировки</div></div>
+  </div>
+
+  <!-- EXERCISES DB -->
+  <div id="tab-content-exercises" class="tab-content hidden">
+    <div class="page-title">База упражнений</div>
+    <div class="filter-bar">
+      <button class="filter-chip active" onclick="filterEx('all',this)">Все</button>
+      <button class="filter-chip" onclick="filterEx('chest',this)">Грудь</button>
+      <button class="filter-chip" onclick="filterEx('legs',this)">Ноги</button>
+      <button class="filter-chip" onclick="filterEx('back',this)">Спина</button>
+      <button class="filter-chip" onclick="filterEx('abs',this)">Пресс</button>
+      <button class="filter-chip" onclick="filterEx('cardio',this)">Кардио</button>
+      <button class="filter-chip" onclick="filterEx('shoulders',this)">Плечи</button>
+    </div>
+    <div class="ex-db-list" id="exDbList"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="tab-content-settings" class="tab-content hidden">
+    <div class="page-title">Настройки</div>
+    <div class="settings-section">
+      <div class="settings-section-label">ПРОФИЛЬ</div>
+      <div class="setting-row"><span class="setting-name">Цель</span><span class="setting-val" onclick="openModal('goal')" id="set-goal">—</span></div>
+      <div class="setting-row"><span class="setting-name">Уровень</span><span class="setting-val" onclick="openModal('level')" id="set-level">—</span></div>
+      <div class="setting-row"><span class="setting-name">Вес</span><span class="setting-val" onclick="openModal('weight')" id="set-weight">—</span></div>
+      <div class="setting-row"><span class="setting-name">Рост</span><span class="setting-val" onclick="openModal('height')" id="set-height">—</span></div>
+      <div class="setting-row"><span class="setting-name">ИМТ</span><span class="setting-val" id="set-bmi" style="cursor:default">—</span></div>
+      <div class="setting-row"><span class="setting-name">Инвентарь</span><span class="setting-val" onclick="openModal('equipment')" id="set-equipment">—</span></div>
+      <div class="setting-row"><span class="setting-name">Время тренировки</span><span class="setting-val" onclick="openModal('duration')" id="set-duration">—</span></div>
+      <div class="setting-row"><span class="setting-name">Дней в неделю</span><span class="setting-val" onclick="openModal('frequency')" id="set-frequency">—</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-label">ДАННЫЕ</div>
+      <div class="setting-row"><span class="setting-name">Сбросить прогресс</span><span class="setting-val" style="color:var(--red)" onclick="resetProgress()">Удалить</span></div>
+      <div class="setting-row"><span class="setting-name">Начать заново</span><span class="setting-val" style="color:var(--red)" onclick="resetAll()">Сбросить</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- TIMER -->
+<div class="timer-overlay hidden" id="timerOverlay">
+  <div class="timer-label" id="timerLabel">ОТДЫХ</div>
+  <div class="timer-display" id="timerDisplay">00:00</div>
+  <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
+  <div class="timer-btns">
+    <button class="btn btn-ghost" id="timerPauseBtn" onclick="toggleTimer()">⏸ Пауза</button>
+    <button class="btn btn-danger" onclick="closeTimer()">Стоп</button>
+  </div>
+</div>
+
+<!-- COMPLETE -->
+<div class="complete-overlay hidden" id="completeOverlay">
+  <div class="complete-icon">✓</div>
+  <div class="complete-title">Готово</div>
+  <div class="complete-sub" id="completeDate"></div>
+  <div class="complete-stats">
+    <div class="complete-stat"><div class="complete-stat-val" id="completeExCount">0</div><div class="complete-stat-label">УПРАЖНЕНИЙ</div></div>
+    <div class="complete-stat"><div class="complete-stat-val" id="completeReps">0</div><div class="complete-stat-label">ПОВТОРЕНИЙ</div></div>
+  </div>
+  <button class="btn btn-primary btn-lg" onclick="closeComplete()">Закрыть</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-options" id="modalOptions"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="saveModal()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// EXERCISE DATABASE — полная база, без API
+// ══════════════════════════════════════════════════════
+const DB = {
+  chest:[
+    {name:'Отжимания',level:'beginner',equip:'none',sets:3,reps:'10-15',rest:60,tip:'Тело прямое, локти 45°',video:'https://www.youtube.com/results?search_query=отжимания+техника'},
+    {name:'Отжимания широким хватом',level:'intermediate',equip:'none',sets:3,reps:'10-12',rest:60,tip:'Руки шире плеч, медленный спуск',video:'https://www.youtube.com/results?search_query=отжимания+широкий+хват'},
+    {name:'Алмазные отжимания',level:'intermediate',equip:'none',sets:3,reps:'8-12',rest:60,tip:'Руки ромбом — акцент на трицепс',video:'https://www.youtube.com/results?search_query=алмазные+отжимания'},
+    {name:'Отжимания с паузой',level:'intermediate',equip:'none',sets:4,reps:'6-10',rest:75,tip:'3 секунды внизу, взрыв вверх',video:'https://www.youtube.com/results?search_query=отжимания+с+паузой'},
+    {name:'Жим гантелей лёжа',level:'intermediate',equip:'dumbbells',sets:4,reps:'10-12',rest:75,tip:'Лопатки сведены, дуга в пояснице',video:'https://www.youtube.com/results?search_query=жим+гантелей+лежа'},
+    {name:'Разводка гантелей лёжа',level:'intermediate',equip:'dumbbells',sets:3,reps:'12-15',rest:60,tip:'Лёгкий изгиб в локтях',video:'https://www.youtube.com/results?search_query=разводка+гантелей'},
+    {name:'Отжимания на кулаках',level:'intermediate',equip:'none',sets:3,reps:'10-15',rest:60,tip:'Кулаки под плечами, запястья нейтрально',video:'https://www.youtube.com/results?search_query=отжимания+на+кулаках'},
+    {name:'Дефицитные отжимания',level:'advanced',equip:'none',sets:4,reps:'8-12',rest:75,tip:'Руки на возвышении, глубокий спуск',video:'https://www.youtube.com/results?search_query=дефицитные+отжимания'},
+  ],
+  legs:[
+    {name:'Приседания',level:'beginner',equip:'none',sets:3,reps:'15-20',rest:60,tip:'Колени над носками, пятки на полу',video:'https://www.youtube.com/results?search_query=приседания+техника'},
+    {name:'Выпады',level:'beginner',equip:'none',sets:3,reps:'12 каж.',rest:60,tip:'Заднее колено не касается пола',video:'https://www.youtube.com/results?search_query=выпады+техника'},
+    {name:'Ягодичный мост',level:'beginner',equip:'none',sets:3,reps:'15-20',rest:45,tip:'Сожми ягодицы в верхней точке',video:'https://www.youtube.com/results?search_query=ягодичный+мост'},
+    {name:'Приседания с прыжком',level:'intermediate',equip:'none',sets:3,reps:'10-12',rest:75,tip:'Мягкое приземление, сразу в присед',video:'https://www.youtube.com/results?search_query=приседания+с+прыжком'},
+    {name:'Болгарские сплит-приседания',level:'advanced',equip:'none',sets:4,reps:'10 каж.',rest:75,tip:'Задняя нога на диване, корпус прямо',video:'https://www.youtube.com/results?search_query=болгарские+приседания'},
+    {name:'Пистолет (присед на одной)',level:'advanced',equip:'none',sets:3,reps:'5-8 каж.',rest:90,tip:'Руки вперёд для баланса',video:'https://www.youtube.com/results?search_query=пистолет+упражнение'},
+    {name:'Приседания с гантелями',level:'intermediate',equip:'dumbbells',sets:4,reps:'12-15',rest:60,tip:'Гантели у плеч или внизу',video:'https://www.youtube.com/results?search_query=приседания+с+гантелями'},
+    {name:'Мёртвая тяга с гантелями',level:'intermediate',equip:'dumbbells',sets:4,reps:'10-12',rest:75,tip:'Спина прямая, ягодицы назад',video:'https://www.youtube.com/results?search_query=мертвая+тяга+гантели'},
+    {name:'Зашагивания на возвышение',level:'intermediate',equip:'none',sets:3,reps:'12 каж.',rest:60,tip:'Толкайся пяткой, не носком',video:'https://www.youtube.com/results?search_query=зашагивания+на+возвышение'},
+    {name:'Ягодичный мост на одной ноге',level:'advanced',equip:'none',sets:3,reps:'12 каж.',rest:60,tip:'Таз не проваливается',video:'https://www.youtube.com/results?search_query=ягодичный+мост+на+одной+ноге'},
+  ],
+  back:[
+    {name:'Супермен',level:'beginner',equip:'none',sets:3,reps:'12-15',rest:45,tip:'Подъём рук и ног одновременно, задержись 2с',video:'https://www.youtube.com/results?search_query=упражнение+супермен'},
+    {name:'Австралийские подтягивания',level:'beginner',equip:'none',sets:3,reps:'10-15',rest:60,tip:'Корпус прямой, тяни грудь к рукам',video:'https://www.youtube.com/results?search_query=австралийские+подтягивания'},
+    {name:'Подтягивания',level:'intermediate',equip:'pullup_bar',sets:4,reps:'6-10',rest:90,tip:'Тяни грудь к перекладине, не шею',video:'https://www.youtube.com/results?search_query=подтягивания+техника'},
+    {name:'Подтягивания обратным хватом',level:'intermediate',equip:'pullup_bar',sets:4,reps:'6-10',rest:90,tip:'Ладони к себе — больше бицепс',video:'https://www.youtube.com/results?search_query=подтягивания+обратный+хват'},
+    {name:'Негативные подтягивания',level:'beginner',equip:'pullup_bar',sets:3,reps:'5-8',rest:90,tip:'Медленно опускайся — 4-5 секунд',video:'https://www.youtube.com/results?search_query=негативные+подтягивания'},
+    {name:'Тяга гантели одной рукой',level:'intermediate',equip:'dumbbells',sets:4,reps:'10-12 каж.',rest:60,tip:'Локоть идёт вдоль тела назад',video:'https://www.youtube.com/results?search_query=тяга+гантели+одной+рукой'},
+    {name:'Тяга резинки к поясу',level:'beginner',equip:'bands',sets:3,reps:'15-20',rest:45,tip:'Лопатки сводятся в конечной точке',video:'https://www.youtube.com/results?search_query=тяга+резинки+к+поясу'},
+    {name:'Планка обратная',level:'intermediate',equip:'none',sets:3,reps:'30 сек',rest:45,tip:'Таз поднят, лопатки вместе',video:'https://www.youtube.com/results?search_query=обратная+планка'},
+  ],
+  abs:[
+    {name:'Планка',level:'beginner',equip:'none',sets:3,reps:'30 сек',rest:45,tip:'Прямая линия, пресс напряжён',video:'https://www.youtube.com/results?search_query=планка+техника'},
+    {name:'Скручивания',level:'beginner',equip:'none',sets:3,reps:'15-20',rest:45,tip:'Поднимай лопатки, не поясницу',video:'https://www.youtube.com/results?search_query=скручивания+пресс'},
+    {name:'Велосипед',level:'beginner',equip:'none',sets:3,reps:'20-30',rest:45,tip:'Медленно, без инерции',video:'https://www.youtube.com/results?search_query=велосипед+пресс'},
+    {name:'Подъём ног лёжа',level:'intermediate',equip:'none',sets:3,reps:'12-15',rest:45,tip:'Поясница прижата к полу',video:'https://www.youtube.com/results?search_query=подъем+ног+пресс'},
+    {name:'Планка с переносом веса',level:'intermediate',equip:'none',sets:3,reps:'10-15',rest:45,tip:'Таз не качается',video:'https://www.youtube.com/results?search_query=планка+с+переносом'},
+    {name:'Русские скручивания',level:'intermediate',equip:'none',sets:3,reps:'20-24',rest:45,tip:'Ноги оторваны от пола, поворот корпуса',video:'https://www.youtube.com/results?search_query=русские+скручивания'},
+    {name:'Складка',level:'intermediate',equip:'none',sets:3,reps:'12-15',rest:45,tip:'Руки и ноги навстречу одновременно',video:'https://www.youtube.com/results?search_query=складка+упражнение+пресс'},
+    {name:'Боковая планка',level:'intermediate',equip:'none',sets:3,reps:'25 сек каж.',rest:45,tip:'Бедра не провисают',video:'https://www.youtube.com/results?search_query=боковая+планка'},
+    {name:'Дровосек',level:'advanced',equip:'none',sets:3,reps:'12 каж.',rest:45,tip:'Поворот через пресс, не руки',video:'https://www.youtube.com/results?search_query=дровосек+упражнение+пресс'},
+  ],
+  cardio:[
+    {name:'Прыжки на месте',level:'beginner',equip:'none',sets:3,reps:'30 сек',rest:30,tip:'Мягкое приземление',video:'https://www.youtube.com/results?search_query=прыжки+на+месте+кардио'},
+    {name:'Бег с высоким коленом',level:'beginner',equip:'none',sets:3,reps:'30 сек',rest:30,tip:'Колено до пояса, руки активно',video:'https://www.youtube.com/results?search_query=бег+высокое+колено'},
+    {name:'Берпи',level:'intermediate',equip:'none',sets:3,reps:'8-10',rest:60,tip:'Контролируй каждую фазу',video:'https://www.youtube.com/results?search_query=берпи+техника'},
+    {name:'Скалолаз',level:'intermediate',equip:'none',sets:3,reps:'30 сек',rest:45,tip:'Таз не поднимать, темп высокий',video:'https://www.youtube.com/results?search_query=скалолаз+упражнение'},
+    {name:'Прыжки «Звезда»',level:'beginner',equip:'none',sets:3,reps:'25-30',rest:30,tip:'Прыжок с разведением рук и ног',video:'https://www.youtube.com/results?search_query=прыжки+звезда'},
+    {name:'Удары ногами в воздух',level:'beginner',equip:'none',sets:3,reps:'20 каж.',rest:30,tip:'Контроль равновесия',video:'https://www.youtube.com/results?search_query=удары+ногами+кардио'},
+    {name:'Берпи без прыжка',level:'beginner',equip:'none',sets:3,reps:'10-12',rest:60,tip:'Для новичков — без прыжка вверх',video:'https://www.youtube.com/results?search_query=берпи+без+прыжка'},
+    {name:'Боксёрские прыжки (скакалка без скакалки)',level:'intermediate',equip:'none',sets:4,reps:'45 сек',rest:30,tip:'Лёгкие прыжки на носках',video:'https://www.youtube.com/results?search_query=прыжки+боксёр+без+скакалки'},
+  ],
+  shoulders:[
+    {name:'Жим гантелей стоя',level:'intermediate',equip:'dumbbells',sets:4,reps:'10-12',rest:60,tip:'Без прогиба в пояснице',video:'https://www.youtube.com/results?search_query=жим+гантелей+стоя'},
+    {name:'Отжимания в стойке на руках',level:'advanced',equip:'none',sets:3,reps:'5-8',rest:90,tip:'Ноги у стены для начала',video:'https://www.youtube.com/results?search_query=отжимания+стойка+на+руках'},
+    {name:'Разведение гантелей в стороны',level:'beginner',equip:'dumbbells',sets:3,reps:'12-15',rest:45,tip:'Лёгкий вес, мизинцы выше большого',video:'https://www.youtube.com/results?search_query=разведение+гантелей+в+стороны'},
+    {name:'Тяга гантелей к подбородку',level:'intermediate',equip:'dumbbells',sets:3,reps:'12-15',rest:60,tip:'Локти выше кистей',video:'https://www.youtube.com/results?search_query=тяга+к+подбородку+гантели'},
+    {name:'Отжимания пикой',level:'intermediate',equip:'none',sets:3,reps:'10-12',rest:60,tip:'Таз высоко, голова между руками',video:'https://www.youtube.com/results?search_query=отжимания+пикой'},
+    {name:'Подъём гантелей перед собой',level:'beginner',equip:'dumbbells',sets:3,reps:'12-15',rest:45,tip:'Без раскачки корпуса',video:'https://www.youtube.com/results?search_query=подъем+гантелей+перед+собой'},
+    {name:'Тяга резинки сверху',level:'beginner',equip:'bands',sets:3,reps:'15-20',rest:45,tip:'Закрепи резинку сверху',video:'https://www.youtube.com/results?search_query=тяга+резинки+сверху'},
+  ]
+};
+
+// ══════════════════════════════════════════════════════
+// WORKOUT PLANS — структура под каждый профиль
+// ══════════════════════════════════════════════════════
+
+// Каждая тренировка — список {cat, name или random, sets, reps, rest}
+const PLANS = {
+  // ПОХУДЕНИЕ
+  weight_loss:{
+    beginner:[
+      {name:'Кардио + Пресс',focus:'Всё тело',cats:['cardio','cardio','abs','abs','legs']},
+      {name:'Нижний+Кардио',focus:'Ноги и кардио',cats:['legs','legs','cardio','abs','cardio']},
+    ],
+    intermediate:[
+      {name:'HIIT Комплекс',focus:'Всё тело',cats:['cardio','cardio','legs','abs','cardio','abs']},
+      {name:'Кардио-Сила',focus:'Метаболизм',cats:['cardio','legs','cardio','chest','abs','cardio']},
+    ],
+    advanced:[
+      {name:'Экстрим-Кардио',focus:'Сжигание',cats:['cardio','cardio','legs','cardio','abs','chest','cardio']},
+      {name:'HIIT Максимум',focus:'Весь организм',cats:['cardio','cardio','legs','abs','shoulders','cardio','abs']},
+    ]
+  },
+  // НАБОР МАССЫ
+  muscle_gain:{
+    beginner:[
+      {name:'Верх тела',focus:'Грудь и спина',cats:['chest','chest','back','back','shoulders']},
+      {name:'Низ тела',focus:'Ноги и пресс',cats:['legs','legs','legs','abs','abs']},
+    ],
+    intermediate:[
+      {name:'Толчок',focus:'Грудь и плечи',cats:['chest','chest','shoulders','shoulders','abs','chest']},
+      {name:'Тяга',focus:'Спина и бицепс',cats:['back','back','back','abs','shoulders']},
+      {name:'Ноги',focus:'Квадрицепс и ягодицы',cats:['legs','legs','legs','abs','legs']},
+    ],
+    advanced:[
+      {name:'Сила: Верх А',focus:'Грудь + плечи',cats:['chest','chest','chest','shoulders','shoulders','abs']},
+      {name:'Сила: Тяга',focus:'Спина + бицепс',cats:['back','back','back','back','abs','shoulders']},
+      {name:'Сила: Ноги',focus:'Квадрицепс+ягодицы',cats:['legs','legs','legs','legs','abs']},
+    ]
+  },
+  // ВЫНОСЛИВОСТЬ
+  endurance:{
+    beginner:[
+      {name:'Круговая 1',focus:'Всё тело',cats:['cardio','legs','abs','chest','cardio']},
+      {name:'Круговая 2',focus:'Всё тело',cats:['cardio','back','abs','legs','cardio']},
+    ],
+    intermediate:[
+      {name:'Интервал А',focus:'Темп и объём',cats:['cardio','chest','cardio','legs','abs','cardio']},
+      {name:'Интервал Б',focus:'Цикличность',cats:['cardio','back','cardio','abs','shoulders','cardio']},
+    ],
+    advanced:[
+      {name:'Марафон-Верх',focus:'Верх + кардио',cats:['cardio','chest','back','cardio','shoulders','abs','cardio']},
+      {name:'Марафон-Низ',focus:'Низ + кардио',cats:['cardio','legs','cardio','legs','abs','cardio','abs']},
+    ]
+  },
+  // УНИВЕРСАЛЬНО
+  general:{
+    beginner:[
+      {name:'Полное тело А',focus:'Базовые движения',cats:['chest','legs','back','abs','cardio']},
+      {name:'Полное тело Б',focus:'Координация',cats:['legs','chest','abs','back','cardio']},
+    ],
+    intermediate:[
+      {name:'Функционал А',focus:'Всё тело',cats:['chest','legs','back','abs','shoulders','cardio']},
+      {name:'Функционал Б',focus:'Сила+Выносливость',cats:['back','legs','chest','abs','cardio','shoulders']},
+    ],
+    advanced:[
+      {name:'Атлетик А',focus:'Мощь и контроль',cats:['chest','back','legs','shoulders','abs','cardio']},
+      {name:'Атлетик Б',focus:'Сила+Скорость',cats:['legs','chest','back','abs','cardio','shoulders']},
+    ]
+  },
+  // МАКСИМУМ 🔥
+  maximum:{
+    beginner:[
+      {name:'🔥 Старт-Макс',focus:'Базовая прокачка',cats:['chest','legs','back','abs','cardio','abs']},
+      {name:'🔥 Кардио-Шок',focus:'Жиросжигание+сила',cats:['cardio','legs','cardio','chest','abs','cardio']},
+    ],
+    intermediate:[
+      {name:'🔥 Полный Газ А',focus:'Верх+Кардио',cats:['chest','chest','back','cardio','abs','shoulders','cardio']},
+      {name:'🔥 Полный Газ Б',focus:'Низ+Кардио',cats:['legs','legs','cardio','abs','legs','cardio','abs']},
+      {name:'🔥 Тотал Боди',focus:'Всё тело',cats:['chest','legs','back','cardio','abs','shoulders','cardio']},
+    ],
+    advanced:[
+      {name:'🔥 Ад Верха',focus:'Грудь+Спина+Плечи',cats:['chest','chest','back','back','shoulders','abs','cardio']},
+      {name:'🔥 Ад Ног',focus:'Квадрицепс+Ягодицы',cats:['legs','legs','legs','cardio','legs','abs','cardio']},
+      {name:'🔥 МАКСИМУМ',focus:'Весь организм',cats:['cardio','chest','legs','back','cardio','abs','shoulders','cardio']},
+    ]
+  }
+};
+
+// ══════════════════════════════════════════════════════
+// ГЕНЕРАЦИЯ ТРЕНИРОВКИ (без API — чистая логика)
+// ══════════════════════════════════════════════════════
+function buildWorkout(profile, planIndex) {
+  const goal = profile.goal;
+  const level = profile.level;
+  const equip = profile.equipment;
+  const duration = parseInt(profile.duration);
+  const isMax = goal === 'maximum';
+
+  const planSet = PLANS[goal]?.[level] || PLANS.general.beginner;
+  const idx = planIndex % planSet.length;
+  const template = planSet[idx];
+
+  // Ограничиваем количество упражнений по времени
+  const maxEx = duration <= 10 ? 3 : duration <= 20 ? 4 : duration <= 30 ? 6 : template.cats.length;
+  const cats = template.cats.slice(0, maxEx);
+
+  // Для каждой категории выбираем подходящее упражнение
+  const usedNames = new Set();
+  const exercises = cats.map((cat, i) => {
+    let pool = DB[cat] || DB.abs;
+
+    // Фильтр по уровню (не строгий — берём ниже или равный)
+    const levelOrder = {beginner:0, intermediate:1, advanced:2};
+    const userLevel = levelOrder[level] ?? 0;
+    let filtered = pool.filter(ex => levelOrder[ex.level] <= userLevel);
+
+    // Фильтр по инвентарю
+    filtered = filtered.filter(ex =>
+      ex.equip === 'none' || equip.includes(ex.equip)
+    );
+
+    // Убираем уже использованные
+    filtered = filtered.filter(ex => !usedNames.has(ex.name));
+
+    // Если ничего не осталось — берём любое из категории
+    if (filtered.length === 0) filtered = pool;
+
+    // Выбираем по циклическому смещению
+    const pick = filtered[i % filtered.length];
+    usedNames.add(pick.name);
+
+    // Максимальный режим: +1 подход и +повторения
+    let sets = pick.sets;
+    let reps = pick.reps;
+    let rest = pick.rest;
+
+    if (isMax) {
+      sets = Math.min(sets + 1, 5);
+      rest = Math.max(rest - 15, 30);
+    }
+    if (level === 'beginner') {
+      sets = Math.max(sets - 1, 2);
+    }
+
+    return { id: i, name: pick.name, sets, reps, rest, tip: pick.tip, done: false };
+  });
+
+  return { name: template.name, focus: template.focus, exercises, planIndex: idx };
+}
+
+// ══════════════════════════════════════════════════════
+// STATE & PERSISTENCE
+// ══════════════════════════════════════════════════════
+let state = { profile: null, history: [], todayWorkout: null, currentDate: '', planCursor: 0 };
+let onboardData = { goal: null, level: null, weight: null, height: null, equipment: [], duration: null, frequency: null };
+let currentStep = 1;
+let timerInterval = null, timerSeconds = 0, timerTotal = 0, timerRunning = false;
+let modalKey = null;
+
+const goalNames = {weight_loss:'Похудение',muscle_gain:'Набор массы',endurance:'Выносливость',general:'Универсально',maximum:'🔥 Максимум'};
+const levelNames = {beginner:'Новичок',intermediate:'Средний',advanced:'Продвинутый'};
+const equipNames = {none:'без инвентаря',dumbbells:'гантели',bands:'резинки',pullup_bar:'турник'};
+
+function save() { localStorage.setItem('tren_state', JSON.stringify(state)); }
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function init() {
+  const saved = localStorage.getItem('tren_state');
+  if (saved) { state = JSON.parse(saved); showMainApp(); }
+  else { initOnboarding(); }
+  renderExDB();
+}
+
+// ══════════════════════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════════════════════
+function initOnboarding() {
+  const dots = document.getElementById('stepIndicator');
+  dots.innerHTML = '';
+  for (let i = 1; i <= 6; i++) { const d = document.createElement('div'); d.className='step-dot'; d.id=`dot-${i}`; dots.appendChild(d); }
+
+  // Single-select cards
+  document.querySelectorAll('.option-card:not(.multi)').forEach(card => {
+    card.addEventListener('click', () => {
+      card.closest('.option-grid').querySelectorAll('.option-card').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      const step = +card.closest('.step').id.replace('step-','');
+      const keys = ['goal','level',null,null,'duration','frequency'];
+      if (keys[step-1]) onboardData[keys[step-1]] = card.dataset.val;
+      checkStepValid(step);
+    });
+  });
+  // Multi-select (equipment)
+  document.querySelectorAll('.option-card.multi').forEach(card => {
+    card.addEventListener('click', () => {
+      const val = card.dataset.val;
+      if (val === 'none') {
+        document.querySelectorAll('.option-card.multi').forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected'); onboardData.equipment = ['none'];
+      } else {
+        document.querySelector('.option-card.multi[data-val="none"]').classList.remove('selected');
+        onboardData.equipment = onboardData.equipment.filter(e=>e!=='none');
+        card.classList.toggle('selected');
+        onboardData.equipment = Array.from(document.querySelectorAll('.option-card.multi.selected')).map(c=>c.dataset.val);
+      }
+      checkStepValid(4);
+    });
+  });
+
+  document.getElementById('next1').onclick=()=>goStep(2);
+  document.getElementById('next2').onclick=()=>goStep(3);
+  document.getElementById('next3').onclick=()=>goStep(4);
+  document.getElementById('next4').onclick=()=>goStep(5);
+  document.getElementById('next5').onclick=()=>goStep(6);
+  document.getElementById('finishOnboard').onclick=finishOnboarding;
+}
+
+function checkStepValid(step) {
+  const ids={1:'next1',2:'next2',3:'next3',4:'next4',5:'next5',6:'finishOnboard'};
+  const checks={
+    1:()=>onboardData.goal,
+    2:()=>onboardData.level,
+    3:()=>{ const w=document.getElementById('inp-weight').value; const h=document.getElementById('inp-height').value; return w&&h&&+w>0&&+h>0; },
+    4:()=>onboardData.equipment.length>0,
+    5:()=>onboardData.duration,
+    6:()=>onboardData.frequency
+  };
+  const btn=document.getElementById(ids[step]);
+  if(btn) btn.disabled=!checks[step]();
+}
+
+function updateBMI() {
+  const w = +document.getElementById('inp-weight').value;
+  const h = +document.getElementById('inp-height').value;
+  const hint = document.getElementById('bmiHint');
+  if (w > 0 && h > 0) {
+    const bmi = w / ((h/100)**2);
+    let label = '';
+    if (bmi < 18.5) label = 'Дефицит массы';
+    else if (bmi < 25) label = 'Норма';
+    else if (bmi < 30) label = 'Избыточный вес';
+    else label = 'Ожирение';
+    hint.textContent = `ИМТ: ${bmi.toFixed(1)} — ${label}`;
+    onboardData.weight = w; onboardData.height = h;
+    checkStepValid(3);
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function goStep(n) {
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  currentStep = n;
+  document.getElementById(`step-${n}`).classList.add('active');
+  for (let i=1;i<=6;i++) document.getElementById(`dot-${i}`).className='step-dot'+(i<n?' done':'');
+}
+
+function finishOnboarding() {
+  const w = +document.getElementById('inp-weight').value;
+  const h = +document.getElementById('inp-height').value;
+  onboardData.weight = w; onboardData.height = h;
+  state.profile = {...onboardData};
+  state.history = []; state.todayWorkout = null; state.currentDate = ''; state.planCursor = 0;
+  save(); showMainApp();
+}
+
+// ══════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════
+function showMainApp() {
+  document.getElementById('screen-onboarding').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  updateSettings(); renderProgress();
+  const now = new Date();
+  document.getElementById('todayDate').textContent = now.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
+  loadTodayWorkout();
+}
+
+function showTab(tab) {
+  ['home','progress','exercises','settings'].forEach(t=>{
+    document.getElementById(`tab-content-${t}`).classList.toggle('hidden',t!==tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
+  });
+  if(tab==='progress') renderProgress();
+}
+
+// ══════════════════════════════════════════════════════
+// WORKOUT LOGIC
+// ══════════════════════════════════════════════════════
+function getTrainDays(freq) {
+  return ({2:[1,4],3:[1,3,5],4:[1,2,4,5],5:[1,2,3,4,5]})[freq]||[1,3,5];
+}
+
+function loadTodayWorkout() {
+  const today = new Date().toDateString();
+  const dow = new Date().getDay();
+  const restDay = !getTrainDays(+state.profile.frequency).includes(dow);
+
+  document.getElementById('restDayMsg').classList.add('hidden');
+  document.getElementById('workoutCard').classList.remove('hidden');
+  document.getElementById('workoutActions').classList.add('hidden');
+
+  if (restDay) {
+    document.getElementById('workoutCard').classList.add('hidden');
+    document.getElementById('restDayMsg').classList.remove('hidden');
+    return;
+  }
+
+  if (state.todayWorkout && state.currentDate === today) {
+    renderWorkout(state.todayWorkout); return;
+  }
+
+  state.currentDate = today;
+  const workout = buildWorkout(state.profile, state.planCursor || 0);
+  state.todayWorkout = workout;
+  state.planCursor = (state.planCursor || 0) + 1;
+  save();
+  renderWorkout(workout);
+}
+
+function renderWorkout(workout) {
+  const isMax = state.profile.goal === 'maximum';
+  const badge = document.getElementById('modeBadge');
+  badge.className = 'mode-badge ' + (isMax ? 'max' : 'normal');
+  badge.textContent = isMax ? '🔥 РЕЖИМ МАКСИМУМ' : '○ Стандартный режим';
+
+  document.getElementById('workoutName').textContent = workout.name.toUpperCase();
+  document.getElementById('workoutMeta').textContent = workout.focus;
+  document.getElementById('todayTitle').textContent = workout.name;
+  document.getElementById('workoutActions').classList.remove('hidden');
+
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = '';
+  workout.exercises.forEach((ex, i) => {
+    const item = document.createElement('div');
+    item.className = 'exercise-item' + (ex.done?' done':'');
+    item.id = `ex-${i}`;
+    item.innerHTML = `
+      <div class="ex-check"><span class="check-mark">✓</span></div>
+      <div class="ex-info">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-sets">${ex.sets} подх. × ${ex.reps}</div>
+        ${ex.tip?`<div class="ex-tip">${ex.tip}</div>`:''}
+      </div>
+      <button class="ex-timer-btn" onclick="startTimer(${ex.rest},'${ex.name.replace(/'/g,'')}',event)">⏱ ${ex.rest}с</button>
+    `;
+    item.addEventListener('click', e => { if(!e.target.classList.contains('ex-timer-btn')) toggleEx(i); });
+    list.appendChild(item);
+  });
+}
+
+function toggleEx(i) {
+  if(!state.todayWorkout) return;
+  state.todayWorkout.exercises[i].done = !state.todayWorkout.exercises[i].done;
+  save();
+  document.getElementById(`ex-${i}`).classList.toggle('done', state.todayWorkout.exercises[i].done);
+}
+
+function newWorkout() {
+  state.planCursor = (state.planCursor||0)+1;
+  state.todayWorkout = buildWorkout(state.profile, state.planCursor);
+  save(); renderWorkout(state.todayWorkout);
+}
+
+function completeWorkout() {
+  const w = state.todayWorkout; if(!w) return;
+  const done = w.exercises.filter(e=>e.done);
+  const totalReps = done.reduce((s,ex)=>{const r=String(ex.reps).match(/\d+/);return s+(r?+r[0]*ex.sets:0);},0);
+  const record = { date:new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'short'}), dateStr:new Date().toDateString(), name:w.name, focus:w.focus, exercises:done, totalReps, exCount:done.length };
+  state.history.unshift(record);
+  if(state.history.length>100) state.history=state.history.slice(0,100);
+  state.todayWorkout=null; state.currentDate=''; save();
+  document.getElementById('completeDate').textContent=record.date;
+  document.getElementById('completeExCount').textContent=record.exCount;
+  document.getElementById('completeReps').textContent=totalReps;
+  document.getElementById('completeOverlay').classList.remove('hidden');
+}
+
+function closeComplete() {
+  document.getElementById('completeOverlay').classList.add('hidden');
+  renderProgress(); loadTodayWorkout();
+}
+
+// ══════════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════════
+function startTimer(seconds, name, e) {
+  e.stopPropagation(); clearInterval(timerInterval);
+  timerSeconds=seconds; timerTotal=seconds; timerRunning=true;
+  document.getElementById('timerLabel').textContent=`ОТДЫХ — ${name.toUpperCase()}`;
+  document.getElementById('timerPauseBtn').textContent='⏸ Пауза';
+  document.getElementById('timerOverlay').classList.remove('hidden');
+  updateTimerUI();
+  timerInterval=setInterval(()=>{
+    if(timerRunning&&timerSeconds>0){timerSeconds--;updateTimerUI();}
+    else if(timerSeconds===0){clearInterval(timerInterval);closeTimer();}
+  },1000);
+}
+function updateTimerUI(){
+  const m=Math.floor(timerSeconds/60).toString().padStart(2,'0');
+  const s=(timerSeconds%60).toString().padStart(2,'0');
+  document.getElementById('timerDisplay').textContent=`${m}:${s}`;
+  document.getElementById('timerBar').style.width=(timerSeconds/timerTotal*100)+'%';
+}
+function toggleTimer(){
+  timerRunning=!timerRunning;
+  document.getElementById('timerPauseBtn').textContent=timerRunning?'⏸ Пауза':'▶ Продолжить';
+}
+function closeTimer(){clearInterval(timerInterval);timerRunning=false;document.getElementById('timerOverlay').classList.add('hidden');}
+
+// ══════════════════════════════════════════════════════
+// PROGRESS
+// ══════════════════════════════════════════════════════
+function renderProgress(){
+  const h=state.history;
+  const totalReps=h.reduce((s,r)=>s+(r.totalReps||0),0);
+  let streak=0;
+  const today=new Date();
+  for(let i=0;i<h.length;i++){
+    if(!h[i].dateStr)break;
+    const d=new Date(h[i].dateStr);
+    const diff=Math.floor((today-d)/86400000);
+    if(diff===i||diff===i+1)streak++;else break;
+  }
+  document.getElementById('statTotal').textContent=h.length;
+  document.getElementById('statStreak').textContent=streak;
+  document.getElementById('statReps').textContent=totalReps>999?Math.round(totalReps/1000)+'k':totalReps;
+
+  const cal=document.getElementById('calendarGrid');cal.innerHTML='';
+  const trained=new Set(h.map(r=>r.dateStr));
+  for(let i=27;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const div=document.createElement('div');
+    div.className='cal-day'+(trained.has(d.toDateString())?' trained':'')+(i===0?' today':'');
+    cal.appendChild(div);
+  }
+
+  const hl=document.getElementById('historyList');
+  if(!h.length){hl.innerHTML='<div style="color:var(--text3);font-size:12px;padding:20px 0;">История появится после первой тренировки</div>';return;}
+  hl.innerHTML='';
+  h.slice(0,15).forEach(r=>{
+    const item=document.createElement('div');item.className='history-item';
+    item.innerHTML=`<div><div class="hist-date">${r.date}</div><div class="hist-name">${r.name}</div></div><div class="hist-stats"><div>${r.exCount||0} упр.</div><div class="hist-badge">${r.totalReps||0} повт.</div></div>`;
+    hl.appendChild(item);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// EXERCISE DB
+// ══════════════════════════════════════════════════════
+let currentFilter='all';
+const catNames={chest:'Грудь',legs:'Ноги',back:'Спина',abs:'Пресс',cardio:'Кардио',shoulders:'Плечи'};
+const lvlNames={beginner:'Новичок',intermediate:'Средний',advanced:'Продвинутый'};
+
+function renderExDB(){
+  const list=document.getElementById('exDbList');list.innerHTML='';
+  const allEx=Object.entries(DB).flatMap(([cat,arr])=>arr.map(ex=>({...ex,cat})));
+  const filtered=currentFilter==='all'?allEx:allEx.filter(e=>e.cat===currentFilter);
+  filtered.forEach(ex=>{
+    const div=document.createElement('div');div.className='ex-db-item';
+    div.innerHTML=`
+      <div class="ex-db-header" onclick="this.parentElement.classList.toggle('open')">
+        <div>
+          <div class="ex-db-name">${ex.name}</div>
+          <div class="ex-db-tags"><span class="tag ${ex.cat}">${catNames[ex.cat]||ex.cat}</span><span class="tag ${ex.level}">${lvlNames[ex.level]||ex.level}</span></div>
+        </div>
+        <span class="ex-expand">▼</span>
+      </div>
+      <div class="ex-db-body">
+        <div class="ex-db-desc">${ex.tip} · ${ex.sets} подх. × ${ex.reps} · Отдых ${ex.rest}с</div>
+        <a class="ex-db-link" href="${ex.video}" target="_blank">▶ Смотреть на YouTube</a>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+function filterEx(cat,btn){
+  currentFilter=cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');renderExDB();
+}
+
+// ══════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════
+function calcBMI(w,h){if(!w||!h)return null;return (w/((h/100)**2)).toFixed(1);}
+
+function updateSettings(){
+  const p=state.profile;if(!p)return;
+  document.getElementById('set-goal').textContent=goalNames[p.goal]||p.goal;
+  document.getElementById('set-level').textContent=levelNames[p.level]||p.level;
+  document.getElementById('set-weight').textContent=p.weight?p.weight+' кг':'—';
+  document.getElementById('set-height').textContent=p.height?p.height+' см':'—';
+  const bmi=calcBMI(p.weight,p.height);
+  document.getElementById('set-bmi').textContent=bmi?bmi:'—';
+  document.getElementById('set-equipment').textContent=p.equipment.map(e=>equipNames[e]||e).join(', ');
+  document.getElementById('set-duration').textContent=p.duration+' мин';
+  document.getElementById('set-frequency').textContent=p.frequency+' дней';
+}
+
+const MODAL_CFG={
+  goal:{title:'Цель',options:[{val:'weight_loss',label:'Похудение'},{val:'muscle_gain',label:'Набор массы'},{val:'endurance',label:'Выносливость'},{val:'general',label:'Универсально'},{val:'maximum',label:'🔥 Максимум'}]},
+  level:{title:'Уровень',options:[{val:'beginner',label:'Новичок'},{val:'intermediate',label:'Средний'},{val:'advanced',label:'Продвинутый'}]},
+  duration:{title:'Время',options:[{val:'10',label:'10 минут'},{val:'20',label:'20 минут'},{val:'30',label:'30 минут'},{val:'45',label:'45+ минут'}]},
+  frequency:{title:'Дней в неделю',options:[{val:'2',label:'2 дня'},{val:'3',label:'3 дня'},{val:'4',label:'4 дня'},{val:'5',label:'5 дней'}]},
+  equipment:{title:'Инвентарь',options:[{val:'none',label:'Ничего'},{val:'dumbbells',label:'Гантели'},{val:'bands',label:'Резинки'},{val:'pullup_bar',label:'Турник'}]},
+};
+
+function openModal(key){
+  modalKey=key;
+  if(key==='weight'||key==='height'){
+    const val=prompt(key==='weight'?'Введи вес (кг):':'Введи рост (см):',state.profile[key]||'');
+    if(val&&+val>0){state.profile[key]=+val;save();updateSettings();}
+    return;
+  }
+  const cfg=MODAL_CFG[key];
+  document.getElementById('modalTitle').textContent=cfg.title;
+  const opts=document.getElementById('modalOptions');opts.innerHTML='';
+  const cur=key==='equipment'?state.profile.equipment:state.profile[key];
+  cfg.options.forEach(o=>{
+    const btn=document.createElement('button');
+    btn.className='modal-opt'+(key==='equipment'?(cur.includes(o.val)?' selected':''):(cur===o.val?' selected':''));
+    btn.textContent=o.label;btn.dataset.val=o.val;
+    btn.addEventListener('click',()=>{
+      if(key==='equipment')btn.classList.toggle('selected');
+      else{opts.querySelectorAll('.modal-opt').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');}
+    });
+    opts.appendChild(btn);
+  });
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.add('hidden');modalKey=null;}
+function saveModal(){
+  const opts=document.querySelectorAll('#modalOptions .modal-opt.selected');
+  if(!opts.length){closeModal();return;}
+  if(modalKey==='equipment')state.profile.equipment=Array.from(opts).map(o=>o.dataset.val);
+  else state.profile[modalKey]=opts[0].dataset.val;
+  save();updateSettings();closeModal();
+  state.todayWorkout=null;state.currentDate='';save();
+  if(!document.getElementById('tab-content-home').classList.contains('hidden'))loadTodayWorkout();
+}
+function resetProgress(){if(confirm('Удалить историю тренировок?')){state.history=[];state.todayWorkout=null;state.currentDate='';save();renderProgress();}}
+function resetAll(){if(confirm('Сбросить всё?')){localStorage.removeItem('tren_state');location.reload();}}
+
+init();
+</script>
+</body>
+</html>
